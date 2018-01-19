@@ -145,6 +145,73 @@ const actors = [{
   }]
 }];
 
-console.log(truckers);
+function step1()
+{
+	for(var i in deliveries)
+	{
+		deliveries[i].price=deliveries[i].distance*truckers[i].pricePerKm
+		 + deliveries[i].volume*truckers[i].pricePerVolume;
+	}
+	//console.log(deliveries);
+}
+
+function step2()
+{
+	for(var i in deliveries)
+	{
+		if(deliveries[i].volume>25)
+		{
+			deliveries[i].price=deliveries[i].distance*truckers[i].pricePerKm
+		 	+ deliveries[i].volume*truckers[i].pricePerVolume*0.50;
+		}
+		else if(deliveries[i].volume>10)
+		{
+			deliveries[i].price=deliveries[i].distance*truckers[i].pricePerKm
+		 	+ deliveries[i].volume*truckers[i].pricePerVolume*0.70;
+		}
+		else if(deliveries[i].volume>5)
+		{
+			deliveries[i].price=deliveries[i].distance*truckers[i].pricePerKm
+		 	+ deliveries[i].volume*truckers[i].pricePerVolume*0.90;
+		}
+		else
+		{
+			deliveries[i].price=deliveries[i].distance*truckers[i].pricePerKm
+		 	+ deliveries[i].volume*truckers[i].pricePerVolume;
+		}
+	}
+	//console.log(deliveries);
+}
+
+function step3()
+{
+	var commission;
+	var insurance;
+	var treasury;
+	var convargo;
+
+	step2();
+
+	for(var i in deliveries)
+	{
+		commission=deliveries[i].price*0.3;
+		insurance=commission/2;
+		deliveries[i].insurance=insurance;
+		commission=commission-insurance;
+		treasury=Math.ceil(deliveries[i].distance/500);
+		deliveries[i].treasury=treasury;
+		commission=commission-treasury;
+		deliveries[i].convargo=commission;
+	}
+}
+
+function step4()
+{
+
+}
+step3();
+//step2();
+//setp1();
+//console.log(truckers);
 console.log(deliveries);
-console.log(actors);
+//console.log(actors);
