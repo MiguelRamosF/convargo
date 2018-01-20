@@ -145,73 +145,176 @@ const actors = [{
   }]
 }];
 
-function step1()
+
+//Function who checks if a object exists in a array of objects (Truckers or Deliveries) considering the parameter id 
+//and returns the corresponding object in the array
+function search_object_by_id(id,arrayOfobjects)
 {
-	for(var i in deliveries)
-	{
-		deliveries[i].price=deliveries[i].distance*truckers[i].pricePerKm
-		 + deliveries[i].volume*truckers[i].pricePerVolume;
-	}
-	//console.log(deliveries);
+	var object;
+    for (var i in arrayOfobjects)
+    {
+        if (arrayOfobjects[i].id == id) 
+        {
+            object=arrayOfobjects[i];
+        }
+    }
+    return object;
 }
 
-function step2()
+//Step 1: Computing the shipping price 
+function shipping_price()
 {
+	var truckerObject;
 	for(var i in deliveries)
 	{
-		if(deliveries[i].volume>25)
+		truckerObject=search_object_by_id(deliveries[i].truckerId,truckers); //Search of the trucker by its id
+
+		if(truckerObject!=null)
 		{
-			deliveries[i].price=deliveries[i].distance*truckers[i].pricePerKm
-		 	+ deliveries[i].volume*truckers[i].pricePerVolume*0.50;
-		}
-		else if(deliveries[i].volume>10)
-		{
-			deliveries[i].price=deliveries[i].distance*truckers[i].pricePerKm
-		 	+ deliveries[i].volume*truckers[i].pricePerVolume*0.70;
-		}
-		else if(deliveries[i].volume>5)
-		{
-			deliveries[i].price=deliveries[i].distance*truckers[i].pricePerKm
-		 	+ deliveries[i].volume*truckers[i].pricePerVolume*0.90;
+			deliveries[i].price=deliveries[i].distance*truckerObject.pricePerKm
+				+ deliveries[i].volume*truckerObject.pricePerVolume;
 		}
 		else
 		{
-			deliveries[i].price=deliveries[i].distance*truckers[i].pricePerKm
-		 	+ deliveries[i].volume*truckers[i].pricePerVolume;
+			console.log("trucker id : " + deliveries[i].truckerId + " in truckers not found");
 		}
 	}
-	//console.log(deliveries);
 }
 
-function step3()
+//Step 2 : Computing the shipping price with high volume discount 
+function shipping_price_discounted()
+{
+	var truckerObject;
+	for(var i in deliveries)
+	{
+		truckerObject=search_object_by_id(deliveries[i].truckerId,truckers); //Search of the trucker by its id
+
+		if(truckerObject!=null)
+		{
+			if(deliveries[i].volume>25)
+			{
+				deliveries[i].price=deliveries[i].distance*truckerObject.pricePerKm
+				+ deliveries[i].volume*truckerObject.pricePerVolume*0.50;
+			}
+			else if(deliveries[i].volume>10)
+			{
+				deliveries[i].price=deliveries[i].distance*truckerObject.pricePerKm
+				+ deliveries[i].volume*truckerObject.pricePerVolume*0.70;
+			}
+			else if(deliveries[i].volume>5)
+			{
+				deliveries[i].price=deliveries[i].distance*truckerObject.pricePerKm
+				+ deliveries[i].volume*truckerObject.pricePerVolume*0.90;
+			}
+			else
+			{
+				deliveries[i].price=deliveries[i].distance*truckerObject.pricePerKm
+				+ deliveries[i].volume*truckerObject.pricePerVolume;
+			}
+		}
+		else
+		{
+			console.log("trucker id : " + deliveries[i].truckerId + " in truckers not found");
+		}
+	}
+}
+
+//Step 3 : Computing the insurance, treasury, convargo from the commission 
+function commission_split()
 {
 	var commission;
 	var insurance;
 	var treasury;
 	var convargo;
 
-	step2();
+	shipping_price_deductible(); //We apply step 4 (final price) for the next calculations purposes
 
 	for(var i in deliveries)
 	{
 		commission=deliveries[i].price*0.3;
 		insurance=commission/2;
-		deliveries[i].insurance=insurance;
+		deliveries[i].commission.insurance=insurance;
 		commission=commission-insurance;
 		treasury=Math.ceil(deliveries[i].distance/500);
-		deliveries[i].treasury=treasury;
+		deliveries[i].commission.treasury=treasury;
 		commission=commission-treasury;
-		deliveries[i].convargo=commission;
+		deliveries[i].commission.convargo=commission;
 	}
 }
 
-function step4()
+//Step 4 (final price) : Computing the shipping price considering the deductible option
+function shipping_price_deductible()
 {
-
+	shipping_price_discounted(); //We apply step 1 and 2 for the next calculation purposes
+	for(var i in deliveries)
+	{
+		if(deliveries[i].options.deductibleReduction)
+		{
+			deliveries[i].price+=deliveries[i].volume;
+		}
+	}
 }
-step3();
-//step2();
-//setp1();
-//console.log(truckers);
+
+//Step 5 : Paying the actors
+function paying_actors()
+{
+	var shipper_debit;
+	var commission;
+	var trucker_credit;
+	var insurance_credit;
+	var treasury_credit;
+	var convargo_credit;
+	var actor;
+	var deliveryObject;
+	shipping_price_deductible(); //We apply step 4 to set the final price
+
+	for(var i in actors)
+	{
+		deliveryObject=search_object_by_id(actors[i].deliveryId,deliveries)
+		if(deliveryObject!=null)
+		{
+			shipper_debit=deliveryObject.price;
+			commission=shipper_debit*0.3;
+			trucker_credit=shipper_debit-commission;
+			insurance_credit=deliveryObject.commission.insurance;
+			treasury_credit=deliveryObject.commission.treasury;
+			convargo_credit=deliveryObject.commission.convargo;
+
+			actor=actors[i].payment;
+
+			for(var i in actor)
+			{
+				switch (actor[i].who)
+				{
+					case "shipper":
+						actor[i].amount=shipper_debit;
+						break;
+					case "trucker":
+						actor[i].amount=trucker_credit;
+						break;
+					case "insurance":
+						actor[i].amount=insurance_credit;
+						break;
+					case "treasury":
+						actor[i].amount=treasury_credit;
+						break;
+					case "convargo":
+						actor[i].amount=convargo_credit;
+						break;
+				}
+			}
+		}
+		else
+		{
+			console.log("delivery id : " + actors[i].deliveryId + " in deliveries not found");
+		}
+	}
+}
+
+
+
+commission_split();
+paying_actors();
+
 console.log(deliveries);
-//console.log(actors);
+console.log(actors);
